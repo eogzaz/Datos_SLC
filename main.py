@@ -17,6 +17,10 @@ if "df_inicial_COBS" not in st.session_state:
 
 if "selected_object" not in st.session_state:
     st.session_state.selected_object = None
+
+if "orbital_period" not in st.session_state:
+    st.session_state.orbital_period = None
+
 if "datos_cargados" not in st.session_state:
     st.session_state.datos_cargados = False
 
