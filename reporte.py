@@ -48,9 +48,9 @@ if rows.data:
     # Botón de descarga CSV
     csv = df.to_csv(index=False).encode("utf-8")
     st.download_button(
-        "⬇️ Descargar CSV",
+        "⬇️ Descargar TXT",
         csv,
-        "resultados.csv",
+        "resultados.txt",
         "text/csv",
         key="download-csv"
     )
