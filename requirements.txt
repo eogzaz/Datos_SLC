@@ -7,3 +7,4 @@ astropy>=5.0
 matplotlib>=3.7.0
 scipy
 supabase
+git+https://github.com/eogzaz/paq_Datos_SLC.git@main
