@@ -27,8 +27,8 @@ st.markdown(
 pg = st.navigation({
     "Menu de navegación:": [
         st.Page("main.py", title="Análisis individual preliminar"),
-        st.Page("reporte.py", title="Reporte preliminar de actividad"),
-        st.Page("listado.py", title="Obtención datos listado"),
+        #st.Page("reporte.py", title="Reporte preliminar de actividad"),
+        #st.Page("listado.py", title="Obtención datos listado"),
         st.Page("Documentacion.py", title="Documentación"),
     ]}
 )
