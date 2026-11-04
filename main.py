@@ -26,9 +26,9 @@ if "datos_cargados" not in st.session_state:
 
 
 # --- Conexión a Supabase ----------------------------------
-url = st.secrets["supabase"]["url"]
-key = st.secrets["supabase"]["key"]
-supabase: Client = create_client(url, key)
+#url = st.secrets["supabase"]["url"]
+#key = st.secrets["supabase"]["key"]
+#supabase: Client = create_client(url, key)
 #-----------------------------------------------------------
 
 
@@ -249,7 +249,7 @@ if object_exists:
 
                         #Recta envolvente
                         on_recta = st.toggle("**Recta envolvente**",value=False)
-                        params_recta = calc_envolvente(df,bin_width=.1)
+                        params_recta = calc_envolvente(df)
                         pendiente_inicial = params_recta[0]
                         intercepto_inicial = params_recta[1]
                         alpha_max=  params_recta[2]
@@ -275,11 +275,6 @@ if object_exists:
                                 if fechas_periodos[i]==False:
                                     clasificacion[i]=pd.DataFrame({'Anio':[],'Mes':[],'Dia':[],'t-Tq':[],'Delta':[],'r':[],'Fase':[],'Magn_obs':[],'Magn_redu':[],'Magn_Corr_Fase':[],'Date':[],'JD':[]})
 
-                        #Promedio corrido
-                        on_prom_corr = st.toggle("**Promedio corrido**",value=False)
-                        if on_prom_corr:
-                            ventana = int(st.text_input('De:',value=9))
-                            df = promedio_corrido(df,'Magn_redu',ventana)
 
                         #Configuracion de grafico
                         with st.expander("⚙️ Configuración grafico de curva de fase"):
@@ -330,14 +325,16 @@ if object_exists:
                         intercepto1 = intercepto
                         if on_colores:
                             st.pyplot(grafica_fase_colores(clasificacion, title=selected_object+" ",familia=family,recta_pendiente=True, pendiente_param = params_recta, limites=limites_ejes))
+                            #st.pyplot(grafica_envolvente(fase_interval_p10, mean_magn_redu_p10, pendiente_inicial, intercepto_inicial, title=selected_object+" ",familia=family, limites=limites_ejes))
                         else:
-                            st.pyplot(grafica_fase(df, alpha_max, magn_max,title=selected_object+" ",familia=family,recta_pendiente=True, pendiente_param = params_recta, limites=limites_ejes))
+                            st.pyplot(grafica_fase_con_envolvente(df, alpha_max, magn_max, pendiente_inicial, intercepto_inicial, title=selected_object+" ",familia=family, limites=limites_ejes))
+                            #st.pyplot(grafica_envolvente(fase_interval_p10, mean_magn_redu_p10, slope, intercept, title=selected_object+" ",familia=family, limites=limites_ejes))
                     else:
                         intercepto1 = 1
                         if on_colores:
                             st.pyplot(grafica_fase_colores(clasificacion, title=selected_object+" ",familia=family, limites=limites_ejes))
                         else:
-                            st.pyplot(grafica_fase(df, alpha_max, magn_max, title=selected_object+" ",familia=family,limites=limites_ejes))
+                            st.pyplot(grafica_fase(df, 1, 1, title=selected_object+" ",familia=family,limites=limites_ejes))
 
                 #-----------SLC----------------------------
                 with col13:

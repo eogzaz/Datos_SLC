@@ -1,4 +1,6 @@
 import pandas as pd
+import polars as pl
+from scipy import stats
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import linregress
@@ -44,27 +46,101 @@ def grafica_fase(df, alpha_max,magn_max,title='none', familia='none', recta_pend
 
     return fig
 
-def calc_envolvente(df, bin_width=0.1):
-    alpha = df['Fase'].copy().to_numpy()
-    m_red = df['Magn_redu'].copy().to_numpy()
-    
-    brightest_alpha = []
-    brightest_mag = []
+def calc_envolvente(df):
+    df_fase = df[['Fase', 'Magn_redu']].copy()
+    df_fase_ord = df_fase.sort_values('Fase').copy()
+    #mean_magn_redu = df_fase_ord['Magn_redu'].mean()
+    #df_fase_ord['diff_magn_redu_mean'] = df_fase_ord['Magn_redu'] - mean_magn_redu
+    #std_magn_redu = df_fase_ord['Magn_redu'].std()
+    #df_fase_fil = df_fase_ord[df_fase_ord['diff_magn_redu_mean'] <= (3 * std_magn_redu)].copy()
 
-    for a_min in np.arange(min(alpha), max(alpha), bin_width):
-        mask = (alpha >= a_min) & (alpha < a_min + bin_width)
-        if np.any(mask):
-            idx = np.argmin(m_red[mask])  # punto más brillante
-            brightest_alpha.append(alpha[mask][idx])
-            brightest_mag.append(m_red[mask][idx])
+    # 3. Percentile Calculation and Joining
+    df_with_interval = df_fase_ord.copy()
+    df_with_interval['Fase_interval'] = df_with_interval['Fase'].astype(int)
 
-    brightest_alpha = np.array(brightest_alpha)
-    brightest_mag = np.array(brightest_mag)
+    percentile_10_per_interval = df_with_interval.groupby('Fase_interval')['Magn_redu'].quantile(0.1, interpolation='linear').reset_index(name='p10_magn_redu')
 
-    slope, intercept, r_value, _, _ = linregress(brightest_alpha, brightest_mag)
-    r2 = r_value**2
+    df_joined = df_with_interval.merge(
+        percentile_10_per_interval,
+        on='Fase_interval',
+        how='left'
+    )
 
-    return [slope, intercept,brightest_alpha,brightest_mag]
+    df_filtered_by_percentile = df_joined[df_joined['Magn_redu'] <= df_joined['p10_magn_redu']].copy()
+
+    df_mean_below_p10 = df_filtered_by_percentile.groupby('Fase_interval')['Magn_redu'].mean().reset_index(name='mean_magn_redu_below_p10').sort_values('Fase_interval')
+
+    # 4. Linear Regression
+    fase_interval_p10 = df_mean_below_p10['Fase_interval'].to_numpy()
+    mean_magn_redu_p10 = df_mean_below_p10['mean_magn_redu_below_p10'].to_numpy()
+
+    slope, intercept, r_value, p_value, std_err = stats.linregress(fase_interval_p10, mean_magn_redu_p10)
+
+    # 5. Flattening the Data
+    #df_plano = df_fase_fil.copy()
+    #df_plano['Magn_redu_plano'] = df_plano['Magn_redu'] - slope * df_plano['Fase'] - intercept
+
+    return slope, intercept, fase_interval_p10, mean_magn_redu_p10, r_value, p_value, std_err
+
+def grafica_fase_con_envolvente(df, fase_interval_p10, mean_magn_redu_p10, slope, intercept, title='none', familia='none', limites=np.array([0,35,17,10])):         
+    xmin = float(limites[0])
+    xmax = float(limites[1])
+    ymin = float(limites[2]) 
+    ymax = float(limites[3]) 
+
+    fig, ax = plt.subplots(figsize=(6, 5))
+
+    ax.plot(df['Fase'], df['Magn_redu'].astype(float), 'o', markerfacecolor='cyan', markeredgecolor='blue', markersize=2)
+    ax.plot(fase_interval_p10, mean_magn_redu_p10, 'o', markerfacecolor='red', markeredgecolor='red', markersize=4)
+
+    x = np.linspace(xmin, xmax, 100)
+    y = intercept + slope * x
+    ax.plot(x, y, 'r-', linewidth=3, label=f'm(1,1,0) = {round(intercept,2)} + {slope:.2}α')
+    ax.legend()
+
+    if not familia==None:
+        ax.set_title(f'{title} ({familia}) - Curva de Fase con Envolvente')
+    else:
+        ax.set_title(f'{title} - Curva de Fase con Envolvente')
+
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+    ax.set_xlabel('α [°]')
+    ax.set_ylabel('m(1,1,α)')
+    ax.tick_params(direction='in')
+    ax.grid()
+
+    return fig  
+
+def grafica_envolvente(fase_interval_p10, mean_magn_redu_p10, slope, intercept, title='none', familia='none', limites=np.array([0,35,17,10])):
+    xmin = float(limites[0])
+    xmax = float(limites[1])
+    ymin = float(limites[2]) 
+    ymax = float(limites[3]) 
+
+    fig, ax = plt.subplots(figsize=(6, 5))
+
+    ax.plot(fase_interval_p10, mean_magn_redu_p10, 'o', markerfacecolor='cyan', markeredgecolor='blue', markersize=2)
+
+    x = np.linspace(xmin, xmax, 100)
+    y = intercept + slope * x
+    ax.plot(x, y, 'r-', linewidth=3, label=f'm(1,1,0) = {round(intercept,2)} + {slope:.2}α')
+    ax.legend()
+
+    if not familia==None:
+        ax.set_title(f'{title} ({familia}) - Envolvente')
+    else:
+        ax.set_title(f'{title} - Envolvente')
+
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+    ax.set_xlabel('α [°]')
+    ax.set_ylabel('m(1,1,α)')
+    ax.tick_params(direction='in')
+    ax.grid()
+
+    return fig
+
 
 def grafica_SLC(df, title='none', familia='none', intercepto=1, limites=np.array([-800,800,17,10]) ):
   xmin = float(limites[0])
