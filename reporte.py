@@ -15,25 +15,30 @@ st.subheader("Reporte preliminar de actividad")
 st.sidebar.header("Filtros")
 
 # Filtro por asteroide
-asteroides = supabase.table("clasificaciones").select("Asteroide").execute()
-asteroide_list = sorted(list({a["Asteroide"] for a in asteroides.data if a["Asteroide"]}))
+asteroides = supabase.table("clasificaciones").select("asteroide").execute()
+asteroide_list = sorted(list({a["asteroide"] for a in asteroides.data if a["asteroide"]}))
 asteroide = st.sidebar.selectbox("Asteroide:", ["Todos"] + asteroide_list)
 
 # Filtro por clasificación
-clasificaciones = supabase.table("clasificaciones").select("Clasificacion").execute()
-clasificacion_list = sorted(list({c["Clasificacion"] for c in clasificaciones.data if c["Clasificacion"]}))
+clasificaciones = supabase.table("clasificaciones").select("clasificacion").execute()
+clasificacion_list = sorted(list({c["clasificacion"] for c in clasificaciones.data if c["clasificacion"]}))
 clasificacion = st.sidebar.selectbox("Clasificación:", ["Todas"] + clasificacion_list)
 
+# Filtro por rango de fechas
+fecha_min = st.sidebar.date_input("Fecha mínima")
+fecha_max = st.sidebar.date_input("Fecha máxima")
 
 # --- Construcción de la consulta ---
 query = supabase.table("clasificaciones").select("*")
 
 if asteroide != "Todos":
-    query = query.eq("Asteroide", asteroide)
+    query = query.eq("asteroide", asteroide)
 
 if clasificacion != "Todas":
-    query = query.eq("Clasificacion", clasificacion)
+    query = query.eq("clasificacion", clasificacion)
 
+if fecha_min and fecha_max:
+    query = query.gte("fecha_hora", str(fecha_min)).lte("fecha_hora", str(fecha_max))
 
 # --- Ejecutar consulta ---
 rows = query.execute()
@@ -42,15 +47,14 @@ rows = query.execute()
 if rows.data:
     df = pd.DataFrame(rows.data)
     st.subheader("Resultados filtrados")
-    st.write(f"Numero de asteroides con analisis preliminar: {len(df)}")
-    st.dataframe(df[["Asteroide", "Nombre", "Familia", "Clasificacion", "Pendiente", "Intercepto", "comentario", "fecha_hora"]], use_container_width=True, hide_index=True)
+    st.dataframe(df, use_container_width=True)
 
     # Botón de descarga CSV
     csv = df.to_csv(index=False).encode("utf-8")
     st.download_button(
-        "⬇️ Descargar TXT",
+        "⬇️ Descargar CSV",
         csv,
-        "resultados.txt",
+        "resultados.csv",
         "text/csv",
         key="download-csv"
     )
@@ -61,6 +65,5 @@ else:
 # --- Mostrar datos ---
 rows = supabase.table("clasificaciones").select("*").execute()
 st.subheader("Clasificaciones almacenadas")
-st.write(f"Numero de asteroides con analisis preliminar: {len(pd.DataFrame(rows.data))}")
-df = pd.DataFrame(rows.data)
-st.dataframe(df[["Asteroide", "Nombre", "Familia", "Clasificacion", "Pendiente", "Intercepto", "comentario", "fecha_hora"]], use_container_width=True, hide_index=True)
+st.write(f"Numero de asteroides con analisis preliminar: {len(pd.DataFrame(rows.data))}") # poner aca un groupby mejor
+st.dataframe(rows.data)
