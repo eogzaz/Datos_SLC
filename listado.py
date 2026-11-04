@@ -2,7 +2,7 @@ import streamlit as st
 import io
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
-from funciones import *
+from paq_Datos_SLC import DATA
 
 # --------------------------
 # Función de ejemplo
@@ -10,9 +10,9 @@ from funciones import *
 # --------------------------
 @st.cache_data
 def generar_txt(asteroide: str) -> str:
-    fi = '1993 01 01'
-    ff = '2025 08 31'
-    df_ast = obtencion_dataframe(asteroide, fi, ff)
+    fi = '1993-01-01'
+    ff = '2025-10-01'
+    df_ast = DATA().datos_SLC(asteroide, fi, ff,'Asteroide').to_pandas()
     txt_ast = df_ast.to_csv(sep='\t', index=False, header=False)
 
     # Simulación de lógica pesada
