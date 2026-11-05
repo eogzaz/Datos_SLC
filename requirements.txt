@@ -1,5 +1,5 @@
 numpy>=1.20
-pandas>=1.0
+pandas==2.2.3
 requests>=2.19
 beautifulsoup4>=4.8
 astroquery>=0.4.10
